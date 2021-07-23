@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspellCLI", "AspellCLI\AspellCLI.csproj", "{B4CB48ED-4A59-43DE-9170-F406B53E4A38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspell.Logic", "Aspell.Logic\Aspell.Logic.csproj", "{42B02D04-EA9F-4F62-8402-9EE5265BD810}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{B4CB48ED-4A59-43DE-9170-F406B53E4A38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4CB48ED-4A59-43DE-9170-F406B53E4A38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4CB48ED-4A59-43DE-9170-F406B53E4A38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42B02D04-EA9F-4F62-8402-9EE5265BD810}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42B02D04-EA9F-4F62-8402-9EE5265BD810}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42B02D04-EA9F-4F62-8402-9EE5265BD810}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42B02D04-EA9F-4F62-8402-9EE5265BD810}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
