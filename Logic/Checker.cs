@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Models;
+using WeCantSpell.Hunspell;
 
 namespace Logic
 {
@@ -19,9 +20,11 @@ namespace Logic
         }
         public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
+            List<InfoFile> infoErrors = new(fileNames.Capacity);
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
+                InfoFile info = null;
                 string sourceCode = LoadFile(fileName);
                 if (sourceCode == null)
                 {
@@ -31,9 +34,26 @@ namespace Logic
                 {
                     var parsedSourceCode = ParseSourceCode(sourceCode);
                     var words = parsedSourceCode.Split(' ');
+                    var dictionary = WordList.CreateFromFiles(@"ru_RU.dic");
+
+                    List<uint> lineErrors = new(10);
+                    List<string> mistakes = new(10);
+                    foreach (var word in words)
+                    {
+                        if (!dictionary.Check(word))
+                        {
+                            lineErrors.Add(1);
+                            mistakes.Add(word);
+                        }
+                    }
+
+                    info = new InfoFile(lineErrors, mistakes, fileName);
                 }
+
+                infoErrors.Add(info);
             }
-            throw new NotImplementedException();
+
+            return infoErrors;
         }
 
         private async Task LoadRules()
@@ -42,7 +62,7 @@ namespace Logic
             Rules = await JsonSerializer.DeserializeAsync<List<Rule>>(fs);
         }
         
-        // TODO: Write reading of file
+        // TODO: Ask Davydov, should I read file full, or partly?
         private string LoadFile(string pathToFile)
         {
             var fileData = string.Empty;
