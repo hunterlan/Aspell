@@ -9,9 +9,9 @@ namespace AspellCLI
 {
     class Program
     {
-        private static List<string> filesToCheck = new();
-        private static bool isHtmlMode = false;
-        private static List<string> rulesForIgnore = new();
+        private static List<string> _filesToCheck = new();
+        private static bool _isHtmlMode = false;
+        private static List<string> _rulesForIgnore = new();
         private static Checker _checker = new(); 
         static void Main(string[] args)
         {
@@ -21,9 +21,9 @@ namespace AspellCLI
         
         static void RunOptions(CommandLineOptions opts)
         {
-            filesToCheck = opts.Files;
-            if (opts.RulesForIgnore.Any()) rulesForIgnore = opts.RulesForIgnore;
-            var result = _checker.CheckFiles(filesToCheck, rulesForIgnore);
+            _filesToCheck = opts.Files.ToList();
+            if (!string.IsNullOrWhiteSpace(opts.RulesForIgnore)) _rulesForIgnore.Add(opts.RulesForIgnore);
+            var result = _checker.CheckFiles(_filesToCheck, _rulesForIgnore);
             ShowResult(result);
         }
 
@@ -39,12 +39,12 @@ namespace AspellCLI
     class CommandLineOptions
     {
         [Option('f', "files", Required = true, HelpText = "Input files, which should be checked")]
-        public List<string> Files { get; set; }
+        public IEnumerable<string> Files { get; set; }
         
         [Option("isHtml", Required = false, HelpText = "Is output result will be in HTML. If not, will be displayed in CLI. Default - false")]
         public bool IsHtml { get; set; } 
         
-        [Option("rules-for-ignore", Required = false, HelpText = "Input file, from which will take words to ignore")]
-        public List<string> RulesForIgnore { get; set; }
+        [Option("rules-for-ignore", Required = false, HelpText = "Input file, from which will take words to ignore", Default = "")]
+        public string RulesForIgnore { get; set; }
     }
 }
