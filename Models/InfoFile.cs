@@ -24,7 +24,7 @@ namespace Models
 
             for (int i = 0; i < Content.Count; i++)
             {
-                sb.Append($"In file {FileName} error on line {LineErrors[i]}: \n{Content[i]}");
+                sb.Append($"In file {FileName} error on line {LineErrors[i]}: {Content[i]}\n");
             }
 
             return sb.ToString();
