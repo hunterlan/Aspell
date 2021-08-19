@@ -7,6 +7,7 @@ using WeCantSpell.Hunspell;
 
 namespace Logic
 {
+    //TODO: Multithreading
     public class Checker
     {
         [JsonProperty("rule")]
@@ -18,39 +19,45 @@ namespace Logic
             _pathToRules = "rules.json";
             LoadRules();
         }
+        
+        //TODO: Several dictionaries
         public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<InfoFile> infoErrors = new(fileNames.Capacity);
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
-                InfoFile info = null;
                 string sourceCode = LoadFile(fileName);
+
                 if (sourceCode == null)
                 {
                     Console.WriteLine("File cannot be load");
                 }
                 else
                 {
-                    var parsedSourceCode = ParseSourceCode(sourceCode);
-                    var words = parsedSourceCode.Split(' ');
-                    var dictionary = WordList.CreateFromFiles(@"ru_RU.dic");
-
                     List<uint> lineErrors = new(10);
                     List<string> mistakes = new(10);
-                    foreach (var word in words)
+                    var dictionary = WordList.CreateFromFiles(@"ru_RU.dic");
+                    
+                    var extractedComments = ExtractComments(sourceCode);
+                    foreach (var comment in extractedComments)
                     {
-                        if (!dictionary.Check(word))
+                        var words = comment.Split(' ');
+
+                       
+                        foreach (var word in words)
                         {
-                            lineErrors.Add(1);
-                            mistakes.Add(word);
+                            if (!dictionary.Check(word))
+                            {
+                                lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                                mistakes.Add(word);
+                            }
                         }
                     }
-
-                    info = new InfoFile(lineErrors, mistakes, fileName);
+                    
+                    var info = new InfoFile(lineErrors, mistakes, fileName);
+                    infoErrors.Add(info);
                 }
-
-                infoErrors.Add(info);
             }
 
             return infoErrors;
@@ -63,7 +70,7 @@ namespace Logic
             Rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
         }
         
-        // TODO: Ask Davydov, should I read file full, or partly?
+        // TODO: Read file parts
         private string LoadFile(string pathToFile)
         {
             var fileData = string.Empty;
@@ -82,13 +89,74 @@ namespace Logic
             return fileData;
         }
         
-        // TODO: Write parsing special symbols from file
-        private string ParseSourceCode(string sourceCode)
+        // TODO: Check for type file
+        private List<string> ExtractComments(string sourceCode)
         {
-            var temp = sourceCode;
-            temp = temp.Replace("/*", " ").Replace('*', ' ').Replace("*/", " ");
+            List<string> comments = new();
+            foreach (var typeComment in Rules.Comments)
+            {
+                while (true)
+                {
+                    var temp = sourceCode;
+                    int indexOpenComments = 0;
+                    int indexCloseComments = 0;
+                    var stringDividedComment = typeComment.Split("br");
+                    
+                    if (stringDividedComment.Length > 1)
+                    {
+                        indexOpenComments = temp.IndexOf(stringDividedComment[0], StringComparison.Ordinal);
+                        indexCloseComments = temp.IndexOf(stringDividedComment[1], StringComparison.Ordinal) 
+                                             - stringDividedComment[0].Length;
+                    }
+                    else
+                    {
+                        indexOpenComments = temp.IndexOf(typeComment, StringComparison.Ordinal);
+                        indexCloseComments = temp.IndexOf("\\n", StringComparison.Ordinal);
+                    }
+                    
+                    if (indexOpenComments <= 0 || indexCloseComments <= 0)
+                    {
+                        break;
+                    }
 
-            return temp;
+                    if (stringDividedComment.Length > 1 == false)
+                    {
+                        temp = temp.Remove(indexOpenComments, typeComment.Length);
+                        sourceCode = temp;
+                    }
+                    else
+                    {
+                        temp = temp.Remove(indexOpenComments, stringDividedComment[0].Length);
+                        temp = temp.Remove(indexCloseComments, stringDividedComment[1].Length);
+                        sourceCode = temp;
+                    }
+
+                    int length = indexCloseComments - indexOpenComments;
+                    comments.Add(temp.Substring(indexOpenComments, length));
+                    sourceCode = sourceCode.Remove(indexOpenComments, length);  
+                }
+            }
+            return comments; 
+        }
+
+        private uint GetCurrentLineForWord(string word, string sourceCode)
+        {
+            var splitCode = sourceCode.Split('\n');
+            
+            uint line = 1;
+            foreach (var stringCode in splitCode)
+            {
+                if (!stringCode.Contains(word))
+                {
+                    line++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return line;
         }
     }
 }
