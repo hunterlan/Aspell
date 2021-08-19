@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Models;
+using Newtonsoft.Json;
 using WeCantSpell.Hunspell;
 
 namespace Logic
 {
     public class Checker
     {
-        private List<Rule> Rules;
+        [JsonProperty("rule")]
+        private Rule Rules;
         private readonly string _pathToRules; 
 
         public Checker()
@@ -56,10 +56,11 @@ namespace Logic
             return infoErrors;
         }
 
-        private async Task LoadRules()
+        //TODO: Several rules
+        private void LoadRules()
         {
-            await using var fs = new FileStream(_pathToRules, FileMode.Open);
-            Rules = await JsonSerializer.DeserializeAsync<List<Rule>>(fs);
+            var json = LoadFile(_pathToRules);
+            Rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
         }
         
         // TODO: Ask Davydov, should I read file full, or partly?
