@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using CommandLine;
 using Logic;
 using Models;
@@ -13,6 +14,8 @@ namespace AspellCLI
         private static bool _isHtmlMode = false;
         private static List<string> _rulesForIgnore = new();
         private static Checker _checker = new(); 
+        
+        static Program() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         static void Main(string[] args)
         {
             Parser.Default.ParseArguments<CommandLineOptions>(args)

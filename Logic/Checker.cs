@@ -37,8 +37,8 @@ namespace Logic
                 {
                     List<uint> lineErrors = new(10);
                     List<string> mistakes = new(10);
-                    var dictionary = WordList.CreateFromFiles(@"ru_RU.dic");
-                    
+                    var dictionary = LoadDictionaries();
+
                     var extractedComments = ExtractComments(sourceCode);
                     foreach (var comment in extractedComments)
                     {
@@ -47,10 +47,18 @@ namespace Logic
                        
                         foreach (var word in words)
                         {
-                            if (!dictionary.Check(word))
+                            for (int i = 0; i < 3; i++)
                             {
-                                lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
-                                mistakes.Add(word);
+                                if (dictionary[i].Check(word))
+                                {
+                                    break;
+                                }
+
+                                if (i == 2)
+                                {
+                                    lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                                    mistakes.Add(word);
+                                }
                             }
                         }
                     }
@@ -87,6 +95,17 @@ namespace Logic
             }
 
             return fileData;
+        }
+
+        private WordList[] LoadDictionaries()
+        {
+            WordList[] dictionaries = new WordList[3];
+
+            dictionaries[0] =  WordList.CreateFromFiles(@"ru_RU.dic");
+            dictionaries[1] =  WordList.CreateFromFiles(@"uk_UA.dic");
+            dictionaries[2] =  WordList.CreateFromFiles(@"en_GB.dic");
+
+            return dictionaries;
         }
         
         // TODO: Check for type file
