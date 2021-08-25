@@ -14,6 +14,7 @@ namespace Logic
         [JsonProperty("rule")]
         private List<Rule> Rules;
         private readonly string _pathToRules; 
+        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t' };
 
         public Checker()
         {
@@ -21,10 +22,10 @@ namespace Logic
             LoadRules();
         }
         
-        //TODO: Detect type files
         public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<InfoFile> infoErrors = new(fileNames.Capacity);
+            var dictionary = LoadDictionaries();
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
@@ -38,31 +39,48 @@ namespace Logic
                 {
                     List<uint> lineErrors = new(10);
                     List<string> mistakes = new(10);
-                    var dictionary = LoadDictionaries();
-                    var currentRule = GetRuleForFile(fileName);
-                    if (currentRule == null)
+                    var fileExtension = Path.GetExtension(fileName);
+                    List<string> extractedText = new();
+                    
+                    switch (fileExtension)
                     {
-                        Console.WriteLine("File {0} doesn't have supported file extension!", Path.GetFileName(fileName));
-                        continue;
-                    }
-                    var extractedComments = ExtractComments(sourceCode, currentRule);
-                    foreach (var comment in extractedComments)
-                    {
-                        var words = comment.Split(' ');
-                        foreach (var word in words)
+                        case ".adoc":
+                        case ".md":
                         {
-                            for (int i = 0; i < 3; i++)
+                            
+                        } break;
+                        case ".doc":
+                        case ".docx":
+                        case ".odt":
+                        {
+                            
+                        } break;
+                        default:
+                        {
+                            var currentRule = GetRuleForFile(fileName);
+                            if (currentRule == null)
                             {
-                                if (dictionary[i].Check(word))
-                                {
-                                    break;
-                                }
+                                Console.WriteLine("File {0} doesn't have supported file extension!", Path.GetFileName(fileName));
+                                continue;
+                            }
+                            extractedText = ExtractComments(sourceCode, currentRule);
+                        } break;
+                    }
+                    
+                    foreach (var word in extractedText.Select(comment => comment.Split(_delimiterChars))
+                        .SelectMany(words => words))
+                    {
+                        for (var i = 0; i < 3; i++)
+                        {
+                            if (dictionary[i].Check(word))
+                            {
+                                break;
+                            }
 
-                                if (i == 2)
-                                {
-                                    lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
-                                    mistakes.Add(word);
-                                }
+                            if (i == 2)
+                            {
+                                lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                                mistakes.Add(word);
                             }
                         }
                     }
@@ -74,8 +92,7 @@ namespace Logic
 
             return infoErrors;
         }
-
-        //TODO: Several rules
+        
         private void LoadRules()
         {
             var json = LoadFile(_pathToRules);
@@ -129,7 +146,6 @@ namespace Logic
             return dictionaries;
         }
         
-        // TODO: Check for type file
         private List<string> ExtractComments(string sourceCode, Rule currentRule)
         {
             List<string> comments = new();
