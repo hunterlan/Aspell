@@ -11,7 +11,6 @@ namespace Logic
     //TODO: Multithreading
     public class Checker
     {
-        [JsonProperty("rule")]
         private List<Rule> Rules;
         private readonly string _pathToRules; 
         private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t' };
@@ -47,7 +46,7 @@ namespace Logic
                         case ".adoc":
                         case ".md":
                         {
-                            
+                            extractedText = ExtractTextFromMarkup(sourceCode, fileName);
                         } break;
                         case ".doc":
                         case ".docx":
@@ -193,6 +192,19 @@ namespace Logic
                 }
             }
             return comments; 
+        }
+
+        private List<string> ExtractTextFromMarkup(string text, string fileName)
+        {
+            var fileExtension = Path.GetExtension(fileName);
+            if (fileExtension == ".md")
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private uint GetCurrentLineForWord(string word, string sourceCode)
