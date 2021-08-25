@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
 namespace Models
 {
     public class Root
     {
-        [JsonPropertyName("rule")]
-        public Rule Rule { get; set; }
+        [JsonProperty("rule")]
+        public List<Rule> Rule { get; set; }
     }
     public class Rule
     {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Models;
 using Newtonsoft.Json;
 using WeCantSpell.Hunspell;
@@ -11,7 +12,7 @@ namespace Logic
     public class Checker
     {
         [JsonProperty("rule")]
-        private Rule Rules;
+        private List<Rule> Rules;
         private readonly string _pathToRules; 
 
         public Checker()
@@ -20,7 +21,7 @@ namespace Logic
             LoadRules();
         }
         
-        //TODO: Several dictionaries
+        //TODO: Detect type files
         public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<InfoFile> infoErrors = new(fileNames.Capacity);
@@ -38,13 +39,16 @@ namespace Logic
                     List<uint> lineErrors = new(10);
                     List<string> mistakes = new(10);
                     var dictionary = LoadDictionaries();
-
-                    var extractedComments = ExtractComments(sourceCode);
+                    var currentRule = GetRuleForFile(fileName);
+                    if (currentRule == null)
+                    {
+                        Console.WriteLine("File {0} doesn't have supported file extension!", Path.GetFileName(fileName));
+                        continue;
+                    }
+                    var extractedComments = ExtractComments(sourceCode, currentRule);
                     foreach (var comment in extractedComments)
                     {
                         var words = comment.Split(' ');
-
-                       
                         foreach (var word in words)
                         {
                             for (int i = 0; i < 3; i++)
@@ -76,6 +80,23 @@ namespace Logic
         {
             var json = LoadFile(_pathToRules);
             Rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
+        }
+
+        private Rule GetRuleForFile(string fileName)
+        {
+            Rule foundRule = null;
+            
+            var fileExtension = Path.GetExtension(fileName);
+            if (fileExtension != null)
+            {
+                foreach (var rule in Rules.Where(rule => rule.TypeFile.Any(type => type == fileExtension)))
+                {
+                    foundRule = rule;
+                    break;
+                }
+            }
+
+            return foundRule;
         }
         
         // TODO: Read file parts
@@ -109,10 +130,10 @@ namespace Logic
         }
         
         // TODO: Check for type file
-        private List<string> ExtractComments(string sourceCode)
+        private List<string> ExtractComments(string sourceCode, Rule currentRule)
         {
             List<string> comments = new();
-            foreach (var typeComment in Rules.Comments)
+            foreach (var typeComment in currentRule.Comments)
             {
                 while (true)
                 {
