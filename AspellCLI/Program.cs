@@ -16,13 +16,14 @@ namespace AspellCLI
         private static readonly IChecker _checker = new Checker(); 
         
         static Program() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
         {
             Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsed(RunOptions);
         }
-        
-        static void RunOptions(CommandLineOptions opts)
+
+        private static void RunOptions(CommandLineOptions opts)
         {
             _filesToCheck = opts.Files.ToList();
             if (!string.IsNullOrWhiteSpace(opts.RulesForIgnore)) _rulesForIgnore.Add(opts.RulesForIgnore);
@@ -30,11 +31,18 @@ namespace AspellCLI
             ShowResult(result);
         }
 
-        static void ShowResult(List<InfoFile> resultInfo)
+        private static void ShowResult(List<ResultProcessingFile> resultInfo)
         {
-            foreach (var info in resultInfo)
+            if (!_isHtmlMode)
             {
-                Console.WriteLine(info.ToString());
+                foreach (var info in resultInfo)
+                {
+                    Console.WriteLine(info.IsErrorOccured ? $"{info.FileName}: {info.TextError}" : info.ToString());
+                }   
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
     }

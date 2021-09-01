@@ -12,8 +12,8 @@ namespace Logic
     //TODO: Multithreading
     public class Checker : IChecker
     {
-        private List<Rule> Rules;
-        private readonly string _pathToRules; 
+        private List<Rule> _rules;
+        private readonly string _pathToRules;
         private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t' };
 
         public Checker()
@@ -21,99 +21,105 @@ namespace Logic
             _pathToRules = "rules.json";
             LoadRules();
         }
-        
-        
+
+
         //TODO: Instead showing excepting - throw it to AspellCLI
-        public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
+        //TODO: Use threads
+        public List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
-            List<InfoFile> infoErrors = new(fileNames.Capacity);
+            List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
             var dictionary = LoadDictionaries();
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
                 var fileExtension = Path.GetExtension(fileName);
-                var sourceCode = string.Empty; 
-                
+                var sourceCode = string.Empty;
+
                 if (!fileExtension.Contains(".doc") || !fileExtension.Contains(".odt"))
                 {
-                    sourceCode = LoadFile(fileName);
-                }
-
-                if (sourceCode == null)
-                {
-                    Console.WriteLine("File cannot be load");
-                }
-                else
-                {
-                    List<uint> lineErrors = new(10);
-                    List<string> mistakes = new(10);
-                    List<string> extractedText;
-                    
-                    switch (fileExtension)
+                    try
                     {
-                        case ".adoc":
-                        case ".md":
-                        {
-                            extractedText = ExtractTextFromMarkup(sourceCode, fileName);
-                        } break;
-                        case ".doc":
-                        case ".docx":
-                        case ".odt":
-                        {
-                            extractedText = ExtractTextFromDoc(fileName);
-                        } break;
-                        default:
-                        {
-                            var currentRule = GetRuleForFile(fileName);
-                            if (currentRule == null)
-                            {
-                                Console.WriteLine("File {0} doesn't have supported file extension!", Path.GetFileName(fileName));
-                                continue;
-                            }
-                            extractedText = ExtractComments(sourceCode, currentRule);
-                        } break;
+                        sourceCode = LoadFile(fileName);
                     }
-                    
-                    foreach (var word in extractedText.Select(comment => comment.Split(_delimiterChars))
-                        .SelectMany(words => words))
+                    catch (Exception e)
                     {
-                        for (var i = 0; i < 3; i++)
-                        {
-                            if (dictionary[i].Check(word))
-                            {
-                                break;
-                            }
+                        var result = new ResultProcessingFile(true, $"Can't load file. {e.Message}", fileName);
+                        infoResult.Add(result);
+                        continue;
+                    }
+                }
+                
+                List<uint> lineErrors = new(10);
+                List<string> mistakes = new(10);
+                List<string> extractedText;
 
-                            if (i == 2)
-                            {
-                                lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
-                                mistakes.Add(word);
-                            }
+                switch (fileExtension)
+                {
+                    case ".adoc":
+                    case ".md":
+                    {
+                        extractedText = ExtractTextFromMarkup(sourceCode, fileName);
+                    } break;
+                    case ".doc":
+                    case ".docx":
+                    case ".odt":
+                    {
+                        extractedText = ExtractTextFromDoc(fileName);
+                    } break;
+                    default:
+                    {
+                        var currentRule = GetRuleForFile(fileName);
+                        if (currentRule == null)
+                        {
+                            var result = new ResultProcessingFile(true, 
+                                "File doesn't have supported file extension!", fileName);
+                            infoResult.Add(result);
+                            continue;
+                        }
+
+                        extractedText = ExtractComments(sourceCode, currentRule);
+                    } break;
+                }
+
+                foreach (var word in extractedText.Select(comment => comment.Split(_delimiterChars))
+                    .SelectMany(words => words))
+                {
+                    for (var i = 0; i < 3; i++)
+                    {
+                        if (dictionary[i].Check(word))
+                        {
+                            break;
+                        }
+
+                        if (i == 2)
+                        {
+                            lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                            mistakes.Add(word);
                         }
                     }
-                    
-                    var info = new InfoFile(lineErrors, mistakes, fileName);
-                    infoErrors.Add(info);
                 }
+
+                var info = new ResultProcessingFile(lineErrors, mistakes, fileName);
+                infoResult.Add(info);
             }
 
-            return infoErrors;
+            return infoResult;
         }
-        
+
         private void LoadRules()
         {
             var json = LoadFile(_pathToRules);
-            Rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
+            _rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
         }
 
         private Rule GetRuleForFile(string fileName)
         {
             Rule foundRule = null;
-            
+
             var fileExtension = Path.GetExtension(fileName);
             if (fileExtension != null)
             {
-                foreach (var rule in Rules.Where(rule => rule.TypeFile.Any(type => type == fileExtension)))
+                foreach (var rule in _rules.Where(rule => rule.TypeFile.Any(type => type == fileExtension)))
                 {
                     foundRule = rule;
                     break;
@@ -122,21 +128,13 @@ namespace Logic
 
             return foundRule;
         }
-        
+
         // TODO: Read file parts
         private string LoadFile(string pathToFile)
         {
-            string fileData;
-            try
-            {
-                using var sr = new StreamReader(pathToFile);
-                fileData = sr.ReadToEnd();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-
+            using var sr = new StreamReader(pathToFile); 
+            var fileData = sr.ReadToEnd();
+            
             return fileData;
         }
 
@@ -144,13 +142,13 @@ namespace Logic
         {
             WordList[] dictionaries = new WordList[3];
 
-            dictionaries[0] =  WordList.CreateFromFiles(@"ru_RU.dic");
-            dictionaries[1] =  WordList.CreateFromFiles(@"uk_UA.dic");
-            dictionaries[2] =  WordList.CreateFromFiles(@"en_GB.dic");
+            dictionaries[0] = WordList.CreateFromFiles(@"ru_RU.dic");
+            dictionaries[1] = WordList.CreateFromFiles(@"uk_UA.dic");
+            dictionaries[2] = WordList.CreateFromFiles(@"en_GB.dic");
 
             return dictionaries;
         }
-        
+
         private List<string> ExtractComments(string sourceCode, Rule currentRule)
         {
             List<string> comments = new();
@@ -162,11 +160,11 @@ namespace Logic
                     int indexOpenComments = 0;
                     int indexCloseComments = 0;
                     var stringDividedComment = typeComment.Split("br");
-                    
+
                     if (stringDividedComment.Length > 1)
                     {
                         indexOpenComments = temp.IndexOf(stringDividedComment[0], StringComparison.Ordinal);
-                        indexCloseComments = temp.IndexOf(stringDividedComment[1], StringComparison.Ordinal) 
+                        indexCloseComments = temp.IndexOf(stringDividedComment[1], StringComparison.Ordinal)
                                              - stringDividedComment[0].Length;
                     }
                     else
@@ -174,7 +172,7 @@ namespace Logic
                         indexOpenComments = temp.IndexOf(typeComment, StringComparison.Ordinal);
                         indexCloseComments = temp.IndexOf("\\n", StringComparison.Ordinal);
                     }
-                    
+
                     if (indexOpenComments <= 0 || indexCloseComments <= 0)
                     {
                         break;
@@ -194,10 +192,11 @@ namespace Logic
 
                     int length = indexCloseComments - indexOpenComments;
                     comments.Add(temp.Substring(indexOpenComments, length));
-                    sourceCode = sourceCode.Remove(indexOpenComments, length);  
+                    sourceCode = sourceCode.Remove(indexOpenComments, length);
                 }
             }
-            return comments; 
+
+            return comments;
         }
 
         private List<string> ExtractTextFromMarkup(string text, string fileName)
@@ -228,7 +227,7 @@ namespace Logic
         private uint GetCurrentLineForWord(string word, string source)
         {
             var splitCode = source.Split('\n');
-            
+
             uint line = 1;
             foreach (var stringCode in splitCode)
             {

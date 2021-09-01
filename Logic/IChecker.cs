@@ -5,6 +5,6 @@ namespace Logic
 {
     public interface IChecker
     {
-        List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore);
+        List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore);
     }
 }

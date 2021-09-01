@@ -3,14 +3,25 @@ using System.Text;
 
 namespace Models
 {
-    public class InfoFile
+    public class ResultProcessingFile
     {
-        public InfoFile(List<uint> lineErrors, List<string> content, string fileName)
+        public ResultProcessingFile(bool errorOccured, string textError, string fileName)
+        {
+            IsErrorOccured = errorOccured;
+            TextError = textError;
+            FileName = fileName;
+        }
+        public ResultProcessingFile(List<uint> lineErrors, List<string> content, string fileName)
         {
             LineErrors = lineErrors;
             Content = content;
             FileName = fileName;
+            IsErrorOccured = false;
         }
+        
+        public bool IsErrorOccured { get; }
+        
+        public string TextError { get; }
 
         public string FileName { get; }
         
