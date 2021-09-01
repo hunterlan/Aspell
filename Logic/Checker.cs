@@ -21,9 +21,7 @@ namespace Logic
             _pathToRules = "rules.json";
             LoadRules();
         }
-
-
-        //TODO: Instead showing excepting - throw it to AspellCLI
+        
         //TODO: Use threads
         public List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
@@ -84,6 +82,7 @@ namespace Logic
                 foreach (var word in extractedText.Select(comment => comment.Split(_delimiterChars))
                     .SelectMany(words => words))
                 {
+                    if (string.IsNullOrWhiteSpace(word)) continue;
                     for (var i = 0; i < 3; i++)
                     {
                         if (dictionary[i].Check(word))
@@ -93,7 +92,14 @@ namespace Logic
 
                         if (i == 2)
                         {
-                            lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                            if (fileExtension.Contains(".doc") || fileExtension == ".odt")
+                            {
+                                lineErrors.Add(GetCurrentLineForWord(word, extractedText[0]));
+                            }
+                            else
+                            {
+                                lineErrors.Add(GetCurrentLineForWord(word, sourceCode));
+                            }
                             mistakes.Add(word);
                         }
                     }
