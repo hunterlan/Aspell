@@ -13,7 +13,7 @@ namespace AspellCLI
         private static List<string> _filesToCheck = new();
         private static bool _isHtmlMode = false;
         private static List<string> _rulesForIgnore = new();
-        private static Checker _checker = new(); 
+        private static readonly IChecker _checker = new Checker(); 
         
         static Program() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         static void Main(string[] args)

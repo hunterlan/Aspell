@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DocumentFormat.OpenXml.Packaging;
 using Models;
 using Newtonsoft.Json;
 using WeCantSpell.Hunspell;
@@ -9,7 +10,7 @@ using WeCantSpell.Hunspell;
 namespace Logic
 {
     //TODO: Multithreading
-    public class Checker
+    public class Checker : IChecker
     {
         private List<Rule> Rules;
         private readonly string _pathToRules; 
@@ -21,6 +22,8 @@ namespace Logic
             LoadRules();
         }
         
+        
+        //TODO: Instead showing excepting - throw it to AspellCLI
         public List<InfoFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<InfoFile> infoErrors = new(fileNames.Capacity);
@@ -28,7 +31,13 @@ namespace Logic
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
-                string sourceCode = LoadFile(fileName);
+                var fileExtension = Path.GetExtension(fileName);
+                var sourceCode = string.Empty; 
+                
+                if (!fileExtension.Contains(".doc") || !fileExtension.Contains(".odt"))
+                {
+                    sourceCode = LoadFile(fileName);
+                }
 
                 if (sourceCode == null)
                 {
@@ -38,8 +47,7 @@ namespace Logic
                 {
                     List<uint> lineErrors = new(10);
                     List<string> mistakes = new(10);
-                    var fileExtension = Path.GetExtension(fileName);
-                    List<string> extractedText = new();
+                    List<string> extractedText;
                     
                     switch (fileExtension)
                     {
@@ -52,7 +60,7 @@ namespace Logic
                         case ".docx":
                         case ".odt":
                         {
-                            
+                            extractedText = ExtractTextFromDoc(fileName);
                         } break;
                         default:
                         {
@@ -118,15 +126,13 @@ namespace Logic
         // TODO: Read file parts
         private string LoadFile(string pathToFile)
         {
-            var fileData = string.Empty;
+            string fileData;
             try
             {
-                using (StreamReader sr = new StreamReader(pathToFile))
-                {
-                    fileData = sr.ReadToEnd();
-                }
+                using var sr = new StreamReader(pathToFile);
+                fileData = sr.ReadToEnd();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return null;
             }
@@ -207,9 +213,21 @@ namespace Logic
             }
         }
 
-        private uint GetCurrentLineForWord(string word, string sourceCode)
+        private List<string> ExtractTextFromDoc(string fileName)
         {
-            var splitCode = sourceCode.Split('\n');
+            List<string> result = new();
+            using var wordDocument = WordprocessingDocument.Open(fileName, false);
+            // Assign a reference to the existing document body.  
+            var body = wordDocument.MainDocumentPart?.Document.Body;
+            //text of Docx file 
+            if (body != null) result.Add(body.InnerText);
+
+            return result;
+        }
+
+        private uint GetCurrentLineForWord(string word, string source)
+        {
+            var splitCode = source.Split('\n');
             
             uint line = 1;
             foreach (var stringCode in splitCode)
