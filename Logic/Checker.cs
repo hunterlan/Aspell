@@ -15,6 +15,7 @@ namespace Logic
         private List<Rule> _rules;
         private readonly string _pathToRules;
         private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t' };
+        private const int LastDictionary = 2;
 
         public Checker()
         {
@@ -26,14 +27,14 @@ namespace Logic
         public List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
-            var dictionary = LoadDictionaries();
+            var dictionaries = LoadDictionaries();
             // TODO: Use Hunspell and ignore words which in rule ignore
             foreach (var fileName in fileNames)
             {
                 var fileExtension = Path.GetExtension(fileName);
                 var sourceCode = string.Empty;
 
-                if (!fileExtension.Contains(".doc") || !fileExtension.Contains(".odt"))
+                if (!IsDocumentType(fileExtension))
                 {
                     try
                     {
@@ -83,16 +84,16 @@ namespace Logic
                     .SelectMany(words => words))
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
-                    for (var i = 0; i < 3; i++)
+                    for (var i = 0; i < dictionaries.Length; i++)
                     {
-                        if (dictionary[i].Check(word))
+                        if (dictionaries[i].Check(word))
                         {
                             break;
                         }
 
-                        if (i == 2)
+                        if (i == LastDictionary)
                         {
-                            if (fileExtension.Contains(".doc") || fileExtension == ".odt")
+                            if (IsDocumentType(fileExtension))
                             {
                                 lineErrors.Add(GetCurrentLineForWord(word, extractedText[0]));
                             }
@@ -248,6 +249,11 @@ namespace Logic
             }
 
             return line;
+        }
+
+        private bool IsDocumentType(string fileExtension)
+        {
+            return fileExtension.Contains(".doc") || fileExtension == ".odt";
         }
     }
 }
