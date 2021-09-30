@@ -14,7 +14,7 @@ namespace Logic
     {
         private List<Rule> _rules;
         private readonly string _pathToRules;
-        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t' };
+        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n' };
         private const int LastDictionary = 2;
 
         public Checker()
@@ -180,7 +180,7 @@ namespace Logic
                         indexCloseComments = temp.IndexOf("\\n", StringComparison.Ordinal);
                     }
 
-                    if (indexOpenComments <= 0 || indexCloseComments <= 0)
+                    if (indexOpenComments < 0 || indexCloseComments < 0)
                     {
                         break;
                     }
