@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using Models;
 using Newtonsoft.Json;
@@ -14,7 +15,7 @@ namespace Logic
     {
         private List<Rule> _rules;
         private readonly string _pathToRules;
-        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n' };
+        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n', '-' };
         private const int LastDictionary = 2;
 
         public Checker()
@@ -84,6 +85,8 @@ namespace Logic
                     .SelectMany(words => words))
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
+                    if (IsWordHexademical(word)) continue;
+                    
                     for (var i = 0; i < dictionaries.Length; i++)
                     {
                         if (dictionaries[i].Check(word))
@@ -254,6 +257,14 @@ namespace Logic
         private bool IsDocumentType(string fileExtension)
         {
             return fileExtension.Contains(".doc") || fileExtension == ".odt";
+        }
+
+        private bool IsWordHexademical(string word)
+        {
+             const string hexademicalStrRegex = @"0x.{1,}";
+             Regex regex = new(hexademicalStrRegex);
+
+             return regex.IsMatch(word);
         }
     }
 }
