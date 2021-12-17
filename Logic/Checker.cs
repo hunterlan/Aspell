@@ -51,7 +51,7 @@ namespace Logic
                 
                 List<uint> lineErrors = new(10);
                 List<string> mistakes = new(10);
-                List<string> extractedText;
+                List<string> extractedText = new();
 
                 switch (fileExtension)
                 {
@@ -68,16 +68,31 @@ namespace Logic
                     } break;
                     default:
                     {
-                        var currentRule = GetRuleForFile(fileName);
-                        if (currentRule == null)
+                        bool sharpCommentExtracted = false;
+                        
+                        if (fileExtension.Equals(".cs"))
                         {
-                            var result = new ResultProcessingFile(true, 
-                                "File doesn't have supported file extension!", fileName);
-                            infoResult.Add(result);
-                            continue;
+                            if (isXmlComments(sourceCode))
+                            {
+                                extractedText = ExtractXmlComments(sourceCode);
+                                // TO-DO: Write method which will extract text from xml
+                                sharpCommentExtracted = true;
+                            }
                         }
 
-                        extractedText = ExtractComments(sourceCode, currentRule);
+                        if (!sharpCommentExtracted)
+                        {
+                            var currentRule = GetRuleForFile(fileName);
+                            if (currentRule == null)
+                            {
+                                var result = new ResultProcessingFile(true, 
+                                    "File doesn't have supported file extension!", fileName);
+                                infoResult.Add(result);
+                                continue;
+                            }
+
+                            extractedText = ExtractComments(sourceCode, currentRule);
+                        }
                     } break;
                 }
 
@@ -209,6 +224,35 @@ namespace Logic
             return comments;
         }
 
+        private List<string> ExtractXmlComments(string sourceCode)
+        {
+            List<string> extractedComments = new();
+            string onlyComments = sourceCode;
+
+            while (true)
+            {
+                int indexOpenComments = 0;
+                int indexCloseComments = 0;
+                
+                indexOpenComments = onlyComments.IndexOf("///", StringComparison.Ordinal);
+                indexCloseComments = onlyComments.IndexOf("\\n", StringComparison.Ordinal);
+                
+                if (indexOpenComments < 0 || indexCloseComments < 0)
+                {
+                    break;
+                }
+                
+                onlyComments = onlyComments.Remove(indexOpenComments, 3); // "///" has 3 length
+                sourceCode = onlyComments;
+                
+                int length = indexCloseComments - indexOpenComments;
+                extractedComments.Add(onlyComments.Substring(indexOpenComments, length));
+                sourceCode = sourceCode.Remove(indexOpenComments, length);
+            }
+            
+            return extractedComments;
+        }
+
         private List<string> ExtractTextFromMarkup(string text, string fileName)
         {
             var fileExtension = Path.GetExtension(fileName);
@@ -265,6 +309,11 @@ namespace Logic
              Regex regex = new(hexademicalStrRegex);
 
              return regex.IsMatch(word);
+        }
+
+        private bool isXmlComments(string sourceCode)
+        {
+            return sourceCode.Contains("///");
         }
     }
 }
