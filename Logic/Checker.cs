@@ -75,7 +75,6 @@ namespace Logic
                             if (isXmlComments(sourceCode))
                             {
                                 extractedText = ExtractXmlComments(sourceCode);
-                                // TO-DO: Write method which will extract text from xml
                                 sharpCommentExtracted = true;
                             }
                         }
@@ -226,6 +225,7 @@ namespace Logic
 
         private List<string> ExtractXmlComments(string sourceCode)
         {
+            var tagsRegex = new Regex(@"<(.)*?>");
             List<string> extractedComments = new();
             string onlyComments = sourceCode;
 
@@ -235,9 +235,15 @@ namespace Logic
                 int indexCloseComments = 0;
                 
                 indexOpenComments = onlyComments.IndexOf("///", StringComparison.Ordinal);
-                indexCloseComments = onlyComments.IndexOf("\\n", StringComparison.Ordinal);
+
+                if (indexOpenComments < 0)
+                {
+                    break;
+                }
                 
-                if (indexOpenComments < 0 || indexCloseComments < 0)
+                indexCloseComments = indexOpenComments + onlyComments[indexOpenComments..].IndexOf('\n', StringComparison.OrdinalIgnoreCase);
+                
+                if (indexCloseComments < 0)
                 {
                     break;
                 }
@@ -246,7 +252,14 @@ namespace Logic
                 sourceCode = onlyComments;
                 
                 int length = indexCloseComments - indexOpenComments;
-                extractedComments.Add(onlyComments.Substring(indexOpenComments, length));
+                var comment = onlyComments.Substring(indexOpenComments, length);
+                var substringComment = tagsRegex.Replace( new string(comment.Where(c => !char.IsControl(c)).ToArray()), "");
+
+                if (!string.IsNullOrWhiteSpace(substringComment))
+                {
+                    extractedComments.Add(substringComment);   
+                }
+                
                 sourceCode = sourceCode.Remove(indexOpenComments, length);
             }
             
