@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using Models;
 using Newtonsoft.Json;
@@ -14,7 +15,7 @@ namespace Logic
     {
         private List<Rule> _rules;
         private readonly string _pathToRules;
-        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n' };
+        private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n', '-' };
         private const int LastDictionary = 2;
 
         public Checker()
@@ -50,7 +51,7 @@ namespace Logic
                 
                 List<uint> lineErrors = new(10);
                 List<string> mistakes = new(10);
-                List<string> extractedText;
+                List<string> extractedText = new();
 
                 switch (fileExtension)
                 {
@@ -67,16 +68,30 @@ namespace Logic
                     } break;
                     default:
                     {
-                        var currentRule = GetRuleForFile(fileName);
-                        if (currentRule == null)
+                        bool sharpCommentExtracted = false;
+                        
+                        if (fileExtension.Equals(".cs"))
                         {
-                            var result = new ResultProcessingFile(true, 
-                                "File doesn't have supported file extension!", fileName);
-                            infoResult.Add(result);
-                            continue;
+                            if (isXmlComments(sourceCode))
+                            {
+                                extractedText = ExtractXmlComments(sourceCode);
+                                sharpCommentExtracted = true;
+                            }
                         }
 
-                        extractedText = ExtractComments(sourceCode, currentRule);
+                        if (!sharpCommentExtracted)
+                        {
+                            var currentRule = GetRuleForFile(fileName);
+                            if (currentRule == null)
+                            {
+                                var result = new ResultProcessingFile(true, 
+                                    "File doesn't have supported file extension!", fileName);
+                                infoResult.Add(result);
+                                continue;
+                            }
+
+                            extractedText = ExtractComments(sourceCode, currentRule);
+                        }
                     } break;
                 }
 
@@ -84,6 +99,8 @@ namespace Logic
                     .SelectMany(words => words))
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
+                    if (IsWordHexademical(word)) continue;
+                    
                     for (var i = 0; i < dictionaries.Length; i++)
                     {
                         if (dictionaries[i].Check(word))
@@ -206,6 +223,49 @@ namespace Logic
             return comments;
         }
 
+        private List<string> ExtractXmlComments(string sourceCode)
+        {
+            var tagsRegex = new Regex(@"<(.)*?>");
+            List<string> extractedComments = new();
+            string onlyComments = sourceCode;
+
+            while (true)
+            {
+                int indexOpenComments = 0;
+                int indexCloseComments = 0;
+                
+                indexOpenComments = onlyComments.IndexOf("///", StringComparison.Ordinal);
+
+                if (indexOpenComments < 0)
+                {
+                    break;
+                }
+                
+                indexCloseComments = indexOpenComments + onlyComments[indexOpenComments..].IndexOf('\n', StringComparison.OrdinalIgnoreCase);
+                
+                if (indexCloseComments < 0)
+                {
+                    break;
+                }
+                
+                onlyComments = onlyComments.Remove(indexOpenComments, 3); // "///" has 3 length
+                sourceCode = onlyComments;
+                
+                int length = indexCloseComments - indexOpenComments;
+                var comment = onlyComments.Substring(indexOpenComments, length);
+                var substringComment = tagsRegex.Replace( new string(comment.Where(c => !char.IsControl(c)).ToArray()), "");
+
+                if (!string.IsNullOrWhiteSpace(substringComment))
+                {
+                    extractedComments.Add(substringComment);   
+                }
+                
+                sourceCode = sourceCode.Remove(indexOpenComments, length);
+            }
+            
+            return extractedComments;
+        }
+
         private List<string> ExtractTextFromMarkup(string text, string fileName)
         {
             var fileExtension = Path.GetExtension(fileName);
@@ -254,6 +314,19 @@ namespace Logic
         private bool IsDocumentType(string fileExtension)
         {
             return fileExtension.Contains(".doc") || fileExtension == ".odt";
+        }
+
+        private bool IsWordHexademical(string word)
+        {
+             const string hexademicalStrRegex = @"0x.{1,}";
+             Regex regex = new(hexademicalStrRegex);
+
+             return regex.IsMatch(word);
+        }
+
+        private bool isXmlComments(string sourceCode)
+        {
+            return sourceCode.Contains("///");
         }
     }
 }
