@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
 using Models;
 using Newtonsoft.Json;
@@ -28,11 +29,24 @@ namespace Logic
         public List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
+            List<Task<ResultProcessingFile>> tasks = new(fileNames.Count);
             var dictionaries = LoadDictionaries();
-            // TODO: Use Hunspell and ignore words which in rule ignore
+            
             foreach (var fileName in fileNames)
             {
-                var fileExtension = Path.GetExtension(fileName);
+                tasks.Add(Task<ResultProcessingFile>.Factory.StartNew(() => StartExtract(fileName, dictionaries)));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+
+            infoResult.AddRange(tasks.Select(task => task.Result));
+
+            return infoResult;
+        }
+
+        private ResultProcessingFile StartExtract(string fileName, WordList[] dictionaries)
+        {
+            var fileExtension = Path.GetExtension(fileName);
                 var sourceCode = string.Empty;
 
                 if (!IsDocumentType(fileExtension))
@@ -43,9 +57,7 @@ namespace Logic
                     }
                     catch (Exception e)
                     {
-                        var result = new ResultProcessingFile(true, $"Can't load file. {e.Message}", fileName);
-                        infoResult.Add(result);
-                        continue;
+                        return new ResultProcessingFile(true, $"Can't load file. {e.Message}", fileName);
                     }
                 }
                 
@@ -84,10 +96,8 @@ namespace Logic
                             var currentRule = GetRuleForFile(fileName);
                             if (currentRule == null)
                             {
-                                var result = new ResultProcessingFile(true, 
+                                return new ResultProcessingFile(true, 
                                     "File doesn't have supported file extension!", fileName);
-                                infoResult.Add(result);
-                                continue;
                             }
 
                             extractedText = ExtractComments(sourceCode, currentRule);
@@ -123,11 +133,7 @@ namespace Logic
                     }
                 }
 
-                var info = new ResultProcessingFile(lineErrors, mistakes, fileName);
-                infoResult.Add(info);
-            }
-
-            return infoResult;
+                return new ResultProcessingFile(lineErrors, mistakes, fileName);
         }
 
         private void LoadRules()

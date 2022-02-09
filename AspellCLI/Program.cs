@@ -43,7 +43,8 @@ namespace AspellCLI
             {
                 foreach (var info in resultInfo)
                 {
-                    Console.WriteLine(info.IsErrorOccured ? $"{info.FileName}: {info.TextError}" : info.ToString());
+                    Console.WriteLine(info.IsErrorOccured ? $"{info.FileName}: {info.TextError}" : 
+                        (info.Content.Count != 0 ? info.ToString() : $"There aren't any mistakes in file {info.FileName}"));
                 }   
             }
             else
@@ -55,7 +56,7 @@ namespace AspellCLI
 
     class CommandLineOptions
     {
-        [Option('f', "files", Required = true, HelpText = "Input files, which should be checked")]
+        [Option('f', "files", Separator = ';', Required = true, HelpText = "Input files, which should be checked")]
         public IEnumerable<string> Files { get; set; }
         
         [Option("isHtml", Required = false, Default = false, HelpText = "Is output result will be in HTML. If not, will be displayed in CLI. Default - false")]
