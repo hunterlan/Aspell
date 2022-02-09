@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Packaging;
+using Infrastructure;
 using Models;
 using Newtonsoft.Json;
 using WeCantSpell.Hunspell;
@@ -17,24 +18,27 @@ namespace Logic
         private List<Rule> _rules;
         private readonly string _pathToRules;
         private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n', '-' };
+        private readonly IUtils _utils;
         private const int LastDictionary = 2;
 
         public Checker()
         {
+            _utils = UtilsFactory.GetUtilsObject();
             _pathToRules = "rules.json";
             LoadRules();
         }
         
         //TODO: Use threads
-        public List<ResultProcessingFile> CheckFiles(List<string> fileNames, List<string> ruleIgnore)
+        public List<ResultProcessingFile> CheckComments(List<string> fileNames, List<string> ruleIgnore)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
             List<Task<ResultProcessingFile>> tasks = new(fileNames.Count);
             var dictionaries = LoadDictionaries();
+            var pathToFiles = _utils.ReplaceDirectoriesByFiles(fileNames);
             
-            foreach (var fileName in fileNames)
+            foreach (var filePath in pathToFiles)
             {
-                tasks.Add(Task<ResultProcessingFile>.Factory.StartNew(() => StartExtract(fileName, dictionaries)));
+                tasks.Add(Task<ResultProcessingFile>.Factory.StartNew(() => StartExtract(filePath, dictionaries)));
             }
 
             Task.WaitAll(tasks.ToArray());
@@ -49,11 +53,11 @@ namespace Logic
             var fileExtension = Path.GetExtension(fileName);
                 var sourceCode = string.Empty;
 
-                if (!IsDocumentType(fileExtension))
+                if (!_utils.IsDocumentType(fileExtension))
                 {
                     try
                     {
-                        sourceCode = LoadFile(fileName);
+                        sourceCode = _utils.LoadFile(fileName);
                     }
                     catch (Exception e)
                     {
@@ -84,7 +88,7 @@ namespace Logic
                         
                         if (fileExtension.Equals(".cs"))
                         {
-                            if (isXmlComments(sourceCode))
+                            if (_utils.IsXmlComments(sourceCode))
                             {
                                 extractedText = ExtractXmlComments(sourceCode);
                                 sharpCommentExtracted = true;
@@ -109,7 +113,7 @@ namespace Logic
                     .SelectMany(words => words))
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
-                    if (IsWordHexademical(word)) continue;
+                    if (_utils.IsWordHexadecimal(word)) continue;
                     
                     for (var i = 0; i < dictionaries.Length; i++)
                     {
@@ -120,7 +124,7 @@ namespace Logic
 
                         if (i == LastDictionary)
                         {
-                            if (IsDocumentType(fileExtension))
+                            if (_utils.IsDocumentType(fileExtension))
                             {
                                 lineErrors.Add(GetCurrentLineForWord(word, extractedText[0]));
                             }
@@ -138,7 +142,7 @@ namespace Logic
 
         private void LoadRules()
         {
-            var json = LoadFile(_pathToRules);
+            var json = _utils.LoadFile(_pathToRules);
             _rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
         }
 
@@ -157,15 +161,6 @@ namespace Logic
             }
 
             return foundRule;
-        }
-
-        // TODO: Read file parts
-        private string LoadFile(string pathToFile)
-        {
-            using var sr = new StreamReader(pathToFile); 
-            var fileData = sr.ReadToEnd();
-            
-            return fileData;
         }
 
         private WordList[] LoadDictionaries()
@@ -315,24 +310,6 @@ namespace Logic
             }
 
             return line;
-        }
-
-        private bool IsDocumentType(string fileExtension)
-        {
-            return fileExtension.Contains(".doc") || fileExtension == ".odt";
-        }
-
-        private bool IsWordHexademical(string word)
-        {
-             const string hexademicalStrRegex = @"0x.{1,}";
-             Regex regex = new(hexademicalStrRegex);
-
-             return regex.IsMatch(word);
-        }
-
-        private bool isXmlComments(string sourceCode)
-        {
-            return sourceCode.Contains("///");
         }
     }
 }

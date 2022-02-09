@@ -33,7 +33,7 @@ namespace AspellCLI
             _isHtmlMode = opts.IsHtml;
             if (!string.IsNullOrWhiteSpace(opts.RulesForIgnore)) _rulesForIgnore.Add(opts.RulesForIgnore);
             
-            var result = Checker.CheckFiles(_filesToCheck, _rulesForIgnore);
+            var result = Checker.CheckComments(_filesToCheck, _rulesForIgnore);
             ShowResult(result);
         }
 
