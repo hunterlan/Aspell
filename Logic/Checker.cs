@@ -12,7 +12,6 @@ using WeCantSpell.Hunspell;
 
 namespace Logic
 {
-    //TODO: Multithreading
     public class Checker : IChecker
     {
         private List<Rule> _rules;
@@ -28,7 +27,6 @@ namespace Logic
             LoadRules();
         }
         
-        //TODO: Use threads
         public List<ResultProcessingFile> CheckComments(List<string> fileNames, List<string> ruleIgnore)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
@@ -126,7 +124,7 @@ namespace Logic
                         {
                             if (_utils.IsDocumentType(fileExtension))
                             {
-                                lineErrors.Add(GetCurrentLineForWord(word, extractedText[0]));
+                                lineErrors.Add(GetCurrentLineForWord(word, extractedText));
                             }
                             else
                             {
@@ -287,9 +285,30 @@ namespace Logic
             // Assign a reference to the existing document body.  
             var body = wordDocument.MainDocumentPart?.Document.Body;
             //text of Docx file 
-            if (body != null) result.Add(body.InnerText);
+
+            if (body != null)
+            {
+                result.AddRange(from paragraph in body where !string.IsNullOrWhiteSpace(paragraph.InnerText) select paragraph.InnerText);
+            }
 
             return result;
+        }
+
+        private uint GetCurrentLineForWord(string word, List<string> lines)
+        {
+            uint lineError = 1;
+            
+            foreach (var line in lines)
+            {
+                if (line.Contains(word))
+                {
+                    return lineError;
+                }
+
+                lineError++;
+            }
+
+            return lineError;
         }
 
         private uint GetCurrentLineForWord(string word, string source)
