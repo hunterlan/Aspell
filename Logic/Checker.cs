@@ -46,7 +46,7 @@ namespace Logic
         {
             _wordsException = new List<string>();
             _utils = UtilsFactory.GetUtilsObject();
-            _pathToRules = "rules.json";
+            _pathToRules = "Resources/rules.json";
             LoadRules();
         }
         
@@ -233,9 +233,9 @@ namespace Logic
         {
             WordList[] dictionaries = new WordList[3];
 
-            dictionaries[0] = WordList.CreateFromFiles(@"ru_RU.dic");
-            dictionaries[1] = WordList.CreateFromFiles(@"uk_UA.dic");
-            dictionaries[2] = WordList.CreateFromFiles(@"en_GB.dic");
+            dictionaries[0] = WordList.CreateFromFiles(@"Resources/ru_RU.dic");
+            dictionaries[1] = WordList.CreateFromFiles(@"Resources/uk_UA.dic");
+            dictionaries[2] = WordList.CreateFromFiles(@"Resources/en_GB.dic");
 
             return dictionaries;
         }
