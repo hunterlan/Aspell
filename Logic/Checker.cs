@@ -19,6 +19,8 @@ namespace Logic
         /// Field, which contains information about rules.
         /// </summary>
         private List<Rule> _rules;
+
+        private List<string> _wordsException;
         /// <summary>
         /// Path to rules initialized in the constructor.
         /// </summary>
@@ -42,18 +44,24 @@ namespace Logic
         /// </summary>
         public Checker()
         {
+            _wordsException = new List<string>();
             _utils = UtilsFactory.GetUtilsObject();
             _pathToRules = "rules.json";
             LoadRules();
         }
         
         /// <inheritdoc/>
-        public List<ResultProcessingFile> CheckComments(List<string> fileNames, List<string> ruleIgnore)
+        public List<ResultProcessingFile> CheckComments(List<string> fileNames, List<string> filesToIgnoreWords)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
             List<Task<ResultProcessingFile>> tasks = new(fileNames.Count);
             var dictionaries = LoadDictionaries();
             var pathToFiles = _utils.ReplaceDirectoriesByFiles(fileNames);
+
+            foreach (var filePath in filesToIgnoreWords)
+            {
+                LoadWordsException(filePath);
+            }
             
             foreach (var filePath in pathToFiles)
             {
@@ -144,7 +152,8 @@ namespace Logic
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
                     if (_utils.IsWordHexadecimal(word)) continue;
-                    
+                    if (_wordsException.Any(exceptionWord => word.ToLower().Contains(exceptionWord.ToLower()))) continue;
+
                     for (var i = 0; i < dictionaries.Length; i++)
                     {
                         if (dictionaries[i].Check(word))
@@ -177,6 +186,21 @@ namespace Logic
         {
             var json = _utils.LoadFile(_pathToRules);
             _rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
+        }
+
+        /// <summary>
+        /// Method load words from files, which we doesn't have to check.
+        /// </summary>
+        /// <param name="fileName">Path to file with words exception.</param>
+        private void LoadWordsException(string fileName)
+        {
+            var contentFile = _utils.LoadFile(fileName);
+            var words = contentFile.Split(_delimiterChars);
+
+            foreach (var word in words)
+            {
+                if (!string.IsNullOrWhiteSpace(word)) _wordsException.Add(word);
+            }
         }
 
         /// <summary>

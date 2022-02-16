@@ -20,8 +20,8 @@ namespace AspellCLI
         /// </summary>
         static Program()
         {
-            Checker = CheckerFactory.GetCheckerObject();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Checker = CheckerFactory.GetCheckerObject();
         }
 
         /// <summary>
@@ -42,7 +42,10 @@ namespace AspellCLI
         {
             _filesToCheck = opts.Files.ToList();
             _isHtmlMode = opts.IsHtml;
-            if (!string.IsNullOrWhiteSpace(opts.RulesForIgnore)) _rulesForIgnore.Add(opts.RulesForIgnore);
+            if (opts.RulesForIgnore != null && opts.RulesForIgnore.Any())
+            {
+                _rulesForIgnore = opts.RulesForIgnore.ToList();
+            }
             
             var result = Checker.CheckComments(_filesToCheck, _rulesForIgnore);
             ShowResult(result);
@@ -78,7 +81,7 @@ namespace AspellCLI
         /// <summary>
         /// List of files, which have to be checked.
         /// </summary>
-        [Option('f', "files", Separator = ';', Required = true, HelpText = "Input files, which should be checked")]
+        [Option('f', "files", Separator = ';', Required = true, HelpText = "Input files, or directories, which should be checked. Can be put several by separator \';\'")]
         public IEnumerable<string> Files { get; set; }
         
         /// <summary>
@@ -90,7 +93,7 @@ namespace AspellCLI
         /// <summary>
         /// File, where some rules will be ignored.
         /// </summary>
-        [Option("rules-for-ignore", Required = false, HelpText = "Input file, from which will take words to ignore", Default = "")]
-        public string RulesForIgnore { get; set; }
+        [Option('i', "rules-for-ignore", Required = false, Separator = ';', HelpText = "Input files, from which will take words to ignore. Can be put several by separator \';\'")]
+        public IEnumerable<string> RulesForIgnore { get; set; }
     }
 }
