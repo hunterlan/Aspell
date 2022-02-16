@@ -12,14 +12,34 @@ using WeCantSpell.Hunspell;
 
 namespace Logic
 {
+    /// <inheritdoc/>
     public class Checker : IChecker
     {
+        /// <summary>
+        /// Field, which contains information about rules.
+        /// </summary>
         private List<Rule> _rules;
+        /// <summary>
+        /// Path to rules initialized in the constructor.
+        /// </summary>
         private readonly string _pathToRules;
+        /// <summary>
+        /// Characters, which will be removed from text during a check.
+        /// </summary>
         private readonly char[] _delimiterChars = { ' ', ',', '.', ':', '\t', '\r', '\n', '-' };
+        /// <summary>
+        /// Fill, which call useful functions from class <see cref="Utils"/>
+        /// </summary>
         private readonly IUtils _utils;
+        /// <summary>
+        /// Constant, which contains index of last dictionary.
+        /// </summary>
         private const int LastDictionary = 2;
 
+        /// <summary>
+        /// Constructor, which initialize <see cref="_utils"/>, <see cref="_pathToRules"/> and load rules
+        /// to <see cref="_rules"/>
+        /// </summary>
         public Checker()
         {
             _utils = UtilsFactory.GetUtilsObject();
@@ -27,6 +47,7 @@ namespace Logic
             LoadRules();
         }
         
+        /// <inheritdoc/>
         public List<ResultProcessingFile> CheckComments(List<string> fileNames, List<string> ruleIgnore)
         {
             List<ResultProcessingFile> infoResult = new(fileNames.Capacity);
@@ -46,6 +67,17 @@ namespace Logic
             return infoResult;
         }
 
+        /// <summary>
+        /// Function, which check a file for mistake.
+        /// Steps:
+        /// <para> 1. Determine extension of the file.</para>
+        /// 2. Extract text/comments.
+        /// <para> 3. Check by Hunspell.</para>
+        /// 4. Return by creating new <see cref="ResultProcessingFile"/>
+        /// </summary>
+        /// <param name="fileName">Path to file.</param>
+        /// <param name="dictionaries">Loaded dictionaries for checking.</param>
+        /// <returns>Result of checking</returns>
         private ResultProcessingFile StartExtract(string fileName, WordList[] dictionaries)
         {
             var fileExtension = Path.GetExtension(fileName);
@@ -138,12 +170,20 @@ namespace Logic
                 return new ResultProcessingFile(lineErrors, mistakes, fileName);
         }
 
+        /// <summary>
+        /// Class, which load rules from rules.json and deserialize it to <see cref="_rules"/>
+        /// </summary>
         private void LoadRules()
         {
             var json = _utils.LoadFile(_pathToRules);
             _rules = JsonConvert.DeserializeObject<Root>(json)?.Rule;
         }
 
+        /// <summary>
+        /// Get rule(s) for current file.
+        /// </summary>
+        /// <param name="fileName">Path to file.</param>
+        /// <returns>Rule for current file.</returns>
         private Rule GetRuleForFile(string fileName)
         {
             Rule foundRule = null;
@@ -161,6 +201,10 @@ namespace Logic
             return foundRule;
         }
 
+        /// <summary>
+        /// Hunspell loads dictionaries to program.
+        /// </summary>
+        /// <returns>Loaded dictionaries.</returns>
         private WordList[] LoadDictionaries()
         {
             WordList[] dictionaries = new WordList[3];
@@ -172,6 +216,12 @@ namespace Logic
             return dictionaries;
         }
 
+        /// <summary>
+        /// Extract comments from source code.
+        /// </summary>
+        /// <param name="sourceCode">Source code</param>
+        /// <param name="currentRule">Rule, which was selected for current file, where sourceCode from.</param>
+        /// <returns>Extracted text from comments.</returns>
         private List<string> ExtractComments(string sourceCode, Rule currentRule)
         {
             List<string> comments = new();
@@ -222,6 +272,11 @@ namespace Logic
             return comments;
         }
 
+        /// <summary>
+        /// Extract comments from .NET source code.
+        /// </summary>
+        /// <param name="sourceCode">Source code of .NET</param>
+        /// <returns>Extracted text from comments.</returns>
         private List<string> ExtractXmlComments(string sourceCode)
         {
             var tagsRegex = new Regex(@"<(.)*?>");
@@ -265,6 +320,13 @@ namespace Logic
             return extractedComments;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
         private List<string> ExtractTextFromMarkup(string text, string fileName)
         {
             var fileExtension = Path.GetExtension(fileName);
@@ -278,6 +340,11 @@ namespace Logic
             }
         }
 
+        /// <summary>
+        /// Extract content from document.
+        /// </summary>
+        /// <param name="fileName">Path to a document.</param>
+        /// <returns>Extracted text from document.</returns>
         private List<string> ExtractTextFromDoc(string fileName)
         {
             List<string> result = new();
@@ -294,11 +361,17 @@ namespace Logic
             return result;
         }
 
-        private uint GetCurrentLineForWord(string word, List<string> lines)
+        /// <summary>
+        /// If need to find out line of mistake for document, program call this implementation.
+        /// </summary>
+        /// <param name="word">Word, where program detected an error</param>
+        /// <param name="sentences">Sentences, which word can be from</param>
+        /// <returns>Line, where mistake was found</returns>
+        private uint GetCurrentLineForWord(string word, List<string> sentences)
         {
             uint lineError = 1;
             
-            foreach (var line in lines)
+            foreach (var line in sentences)
             {
                 if (line.Contains(word))
                 {
@@ -311,6 +384,12 @@ namespace Logic
             return lineError;
         }
 
+        /// <summary>
+        /// If need to find out line of mistake for source code, program call this implementation.
+        /// </summary>
+        /// <param name="word">Word, where program detected an error</param>
+        /// <param name="source">Comment from source code, where mistake was found</param>
+        /// <returns>Line, where mistake was found</returns>
         private uint GetCurrentLineForWord(string word, string source)
         {
             var splitCode = source.Split('\n');

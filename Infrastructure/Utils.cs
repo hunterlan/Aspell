@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Infrastructure
 {
+    /// <inheritdoc/>
     public class Utils : IUtils
     {
         // TODO: Read file parts
@@ -34,21 +35,31 @@ namespace Infrastructure
             return pathToFiles;
         }
         
-        private string[] GetFilesFromDirectory(string pathToDirectory)
+        /// <summary>
+        /// Give list of files from a provided directory.
+        /// </summary>
+        /// <param name="pathToDirectory">Path to the directory</param>
+        /// <returns>Array of paths to the files from the directory.</returns>
+        private IEnumerable<string> GetFilesFromDirectory(string pathToDirectory)
         {
             return Directory.GetFiles(pathToDirectory);
         }
         
+        /// <summary>
+        /// Method check if provided path is a directory.
+        /// </summary>
+        /// <param name="filename">Path</param>
+        /// <returns>Result of the check.</returns>
         private bool IsPathDirectory(string filename)
         {
             return Directory.Exists(filename);
         }
-
+        
         public bool IsDocumentType(string fileExtension)
         {
             return fileExtension.Contains(".doc") || fileExtension == ".odt";
         }
-
+        
         public bool IsWordHexadecimal(string word)
         {
             const string hexademicalStrRegex = @"0x.{1,}";
@@ -56,7 +67,7 @@ namespace Infrastructure
 
             return regex.IsMatch(word);
         }
-
+        
         public bool IsXmlComments(string sourceCode)
         {
             return sourceCode.Contains("///");

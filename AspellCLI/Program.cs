@@ -15,18 +15,29 @@ namespace AspellCLI
         private static List<string> _rulesForIgnore = new();
         private static readonly IChecker Checker;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         static Program()
         {
             Checker = CheckerFactory.GetCheckerObject();
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
+        /// <summary>
+        /// Main function, which start the program.
+        /// </summary>
+        /// <param name="args">Arguments, which user provide to the program</param>
         private static void Main(string[] args)
         {
             Parser.Default.ParseArguments<CommandLineOptions>(args)
                 .WithParsed(RunOptions);
         }
 
+        /// <summary>
+        /// This function get arguments and then, call checking method.
+        /// </summary>
+        /// <param name="opts">Options provided by user and parsed by library</param>
         private static void RunOptions(CommandLineOptions opts)
         {
             _filesToCheck = opts.Files.ToList();
@@ -37,6 +48,11 @@ namespace AspellCLI
             ShowResult(result);
         }
 
+        /// <summary>
+        /// This function show result of the checking.
+        /// </summary>
+        /// <param name="resultInfo">Results of checking files</param>
+        /// <exception cref="NotImplementedException">Unfortunately, HTML mode isn't implemented.</exception>
         private static void ShowResult(List<ResultProcessingFile> resultInfo)
         {
             if (!_isHtmlMode)
@@ -49,20 +65,31 @@ namespace AspellCLI
             }
             else
             {
-                throw new NotImplementedException();
                 throw new NotImplementedException("HTML mode isn't implemented yet.");
             }
         }
     }
 
+    /// <summary>
+    /// This class contains option, which user will user, when start the program.
+    /// </summary>
     class CommandLineOptions
     {
+        /// <summary>
+        /// List of files, which have to be checked.
+        /// </summary>
         [Option('f', "files", Separator = ';', Required = true, HelpText = "Input files, which should be checked")]
         public IEnumerable<string> Files { get; set; }
         
+        /// <summary>
+        /// This defined, will user see results in the terminal, or get HTML file.
+        /// </summary>
         [Option("isHtml", Required = false, Default = false, HelpText = "Is output result will be in HTML. If not, will be displayed in CLI. Default - false")]
         public bool IsHtml { get; set; } 
         
+        /// <summary>
+        /// File, where some rules will be ignored.
+        /// </summary>
         [Option("rules-for-ignore", Required = false, HelpText = "Input file, from which will take words to ignore", Default = "")]
         public string RulesForIgnore { get; set; }
     }
