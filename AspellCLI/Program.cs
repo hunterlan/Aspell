@@ -50,6 +50,7 @@ namespace AspellCLI
             else
             {
                 throw new NotImplementedException();
+                throw new NotImplementedException("HTML mode isn't implemented yet.");
             }
         }
     }
