@@ -13,4 +13,35 @@
       <ProjectReference Include="..\Logic\Logic.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="Resources\rules.json" />
+      <EmbeddedResource Include="Resources\rules.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\en_GB.aff" />
+      <EmbeddedResource Include="Resources\en_GB.aff">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\uk_UA.dic" />
+      <EmbeddedResource Include="Resources\uk_UA.dic">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\uk_UA.aff" />
+      <EmbeddedResource Include="Resources\uk_UA.aff">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\ru_RU.dic" />
+      <EmbeddedResource Include="Resources\ru_RU.dic">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\ru_RU.aff" />
+      <EmbeddedResource Include="Resources\ru_RU.aff">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <None Remove="Resources\en_GB.dic" />
+      <EmbeddedResource Include="Resources\en_GB.dic">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </EmbeddedResource>
+    </ItemGroup>
+
 </Project>

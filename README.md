@@ -12,3 +12,18 @@
 * поддержка проверки doc/odt файлов
 * возможность запуска под alpine
 * возможность расширения функциональности будем создания дополнительных правил, в том числе и для новых типов файлов
+
+# How to launch?
+
+### Command to launch
+
+.\AspellCLI.exe -f "file1.txt"
+
+### Legend of arguments
+
+-f - Required. Path to file, or directory. Can be provided several path with separator ```;```, for example: 
+```.\AspellCLI.exe -f "path1;file2.txt;file3.txt"```
+
+--isHtml - Is output result will be in HTML. If not, will be displayed in CLI. Default - false.
+
+-i Input files, from which will take words to ignore. Can be put several by separator ```;```.
