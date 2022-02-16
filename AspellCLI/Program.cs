@@ -8,7 +8,7 @@ using Models;
 
 namespace AspellCLI
 {
-    class Program
+    internal static class Program
     {
         private static List<string> _filesToCheck = new();
         private static bool _isHtmlMode;
@@ -16,7 +16,7 @@ namespace AspellCLI
         private static readonly IChecker Checker;
 
         /// <summary>
-        /// Constructor
+        /// Constructor of the main class. Initialize checker and set right encoding.
         /// </summary>
         static Program()
         {
@@ -76,7 +76,7 @@ namespace AspellCLI
     /// <summary>
     /// This class contains option, which user will user, when start the program.
     /// </summary>
-    class CommandLineOptions
+    internal abstract class CommandLineOptions
     {
         /// <summary>
         /// List of files, which have to be checked.
